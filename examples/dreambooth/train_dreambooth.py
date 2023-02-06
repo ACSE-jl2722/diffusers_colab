@@ -714,6 +714,13 @@ def main(args):
     logger.info(f"  Total optimization steps = {args.max_train_steps}")
 
     def save_weights(step):
+
+        #hack: (ethan) try to save some memory here
+        import gc 
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         # Create the pipeline using using the trained modules and save it.
         if accelerator.is_main_process:
             if args.train_text_encoder:
