@@ -754,16 +754,19 @@ def main(args):
                 pipeline.set_progress_bar_config(disable=True)
                 sample_dir = os.path.join(save_dir, "samples")
                 os.makedirs(sample_dir, exist_ok=True)
+                parts = args.save_sample_prompt.split("|")
+                # 写成可以一次读取很多的了
                 with torch.autocast("cuda"), torch.inference_mode():
-                    for i in tqdm(range(args.n_save_sample), desc="Generating samples"):
-                        images = pipeline(
-                            args.save_sample_prompt,
-                            negative_prompt=args.save_sample_negative_prompt,
-                            guidance_scale=args.save_guidance_scale,
-                            num_inference_steps=args.save_infer_steps,
-                            generator=g_cuda
-                        ).images
-                        images[0].save(os.path.join(sample_dir, f"{i}.png"))
+                    for part in parts:
+                        for i in tqdm(range(args.n_save_sample), desc=f"Generating samples for prompt '{part}'"):
+                            images = pipeline(
+                                part,
+                                negative_prompt=args.save_sample_negative_prompt,
+                                guidance_scale=args.save_guidance_scale,
+                                num_inference_steps=args.save_infer_steps,
+                                generator=g_cuda
+                            ).images
+                            images[0].save(os.path.join(sample_dir, f"{part}_{i}.png"))
                 del pipeline
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
@@ -855,7 +858,9 @@ def main(args):
                 progress_bar.set_postfix(**logs)
                 accelerator.log(logs, step=global_step)
 
-            if global_step > 0 and not global_step % args.save_interval and global_step >= args.save_min_steps:
+            #if global_step > 0 and not global_step % args.save_interval and global_step >= args.save_min_steps:
+             #   save_weights(global_step)
+            if global_step >= 1500 and global_step % 50 == 0:
                 save_weights(global_step)
 
             progress_bar.update(1)
